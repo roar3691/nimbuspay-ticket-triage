@@ -48,10 +48,16 @@ def encode_row(tokenizer,row):
     prefix = tokenizer.apply_chat_template(row['messages'][:2],tokenize=True,add_generation_prompt=True)
     full = tokenizer.apply_chat_template(row['messages'],tokenize=True,add_generation_prompt=False)
     assert full[:len(prefix)] == prefix, 'Chat template must preserve assistant-header prefix'
-    labels = [-100]*len(prefix) + full[len(prefix):]
+    end_id = tokenizer.convert_tokens_to_ids('<|im_end|>')
+    end_position = full.index(end_id,len(prefix))
+    # The template adds a separator newline after the assistant end token.
+    # Supervise the complete response and end token, mask that separator too.
+    labels = [-100]*len(prefix) + full[len(prefix):end_position+1] + [-100]*(len(full)-end_position-1)
     supervised = tokenizer.decode(full[len(prefix):],skip_special_tokens=False)
     assert supervised.startswith(row['messages'][-1]['content'])
-    assert tokenizer.convert_tokens_to_ids('<|im_end|>') in full[len(prefix):]
+    assert full[end_position] == end_id
+    assert labels[end_position] == end_id
+    assert all(value == -100 for value in labels[end_position+1:])
     return {'input_ids':full,'attention_mask':[1]*len(full),'labels':labels}
 
 
@@ -174,12 +180,15 @@ def train_run(name,tokenizer,rows,maximum,out,dev,max_steps=160):
     dataset=TicketDataset(tokenizer,rows,maximum)
     kwargs=dict(output_dir=str(destination/'checkpoints'),max_steps=max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=16,learning_rate=config['lr'],warmup_steps=8,lr_scheduler_type='cosine',optim='adamw_torch',weight_decay=0,fp16=True,bf16=False,gradient_checkpointing=True,gradient_checkpointing_kwargs={'use_reentrant':False},max_grad_norm=1.0,logging_steps=10,save_strategy='steps',save_steps=50,save_total_limit=1,report_to='none',seed=42,data_seed=42,group_by_length=True,dataloader_num_workers=0,remove_unused_columns=False)
     args=TrainingArguments(**kwargs)
+    (destination/'configuration.json').write_text(json.dumps({'run':name,'model_id':MODEL_ID,'revision':REVISION,'training_arguments':args.to_dict(),'lora':lora.to_dict(),'four_bit':config['four_bit'],'quantization':{'type':'nf4','double_quantization':True,'compute_dtype':'float16'} if config['four_bit'] else None,'trainable_parameters':trainable},indent=2,default=lambda value: sorted(value) if isinstance(value,set) else str(value)))
     trainer=Trainer(model=model,args=args,train_dataset=dataset,data_collator=AssistantCollator(tokenizer),processing_class=tokenizer)
     torch.cuda.reset_peak_memory_stats()
     torch.cuda.synchronize()
     started=time.perf_counter()
     candidates=sorted((destination/'checkpoints').glob('checkpoint-*'),key=lambda p:int(p.name.split('-')[-1]))
     trainer.train(resume_from_checkpoint=str(candidates[-1]) if candidates else None)
+    assert trainer.state.global_step == max_steps
+    assert all(math.isfinite(step['loss']) for step in trainer.state.log_history if 'loss' in step), 'Non-finite training loss'
     torch.cuda.synchronize()
     minutes=(time.perf_counter()-started)/60
     peak_allocated=torch.cuda.max_memory_allocated()
@@ -214,6 +223,8 @@ def export_best(tokenizer,dev,test,out,submission):
     predictions=generate_rows(model,tokenizer,test,submission/'predictions_test.jsonl')
     assert len(predictions)==len(test)==400
     assert {p['id'] for p in predictions}=={r['id'] for r in test}
+    del model;gc.collect();torch.cuda.empty_cache()
+    model=PeftModel.from_pretrained(load_base(best['four_bit']),submission/'adapter')
     chosen=random.Random(42).sample(test,10)
     rerun=generate_rows(model,tokenizer,chosen,out/'reproduction_sample.jsonl')
     lookup={p['id']:p['output'] for p in predictions}
