@@ -1,0 +1,42 @@
+[
+  {
+    "id": "dv-00019",
+    "explanation": "The gold label maps the faulty-product complaint to refund, although a refund is not explicit in the wording. The model emits the disallowed category product and also misses the P1 amount threshold and its human-escalation consequence. Similar ambiguous training complaints need manual review."
+  },
+  {
+    "id": "dv-00046",
+    "explanation": "The statement complaint is labelled fraud in gold; the model chooses refund. That category error also misses the fraud-driven P1 rule. The repeated-contact phrase is handled correctly for needs_human."
+  },
+  {
+    "id": "dv-00181",
+    "explanation": "The bank-card freeze request mentions a strange withdrawal. Fraud and the date are correct, but the model returns a null channel where gold uses card, showing a missed bank-card context association."
+  },
+  {
+    "id": "dv-00090",
+    "explanation": "Parso means two days before the Received date in this past-tense Hinglish ticket: July 10. The model instead copies July 12, the receipt date, while the other transaction fields are correct."
+  },
+  {
+    "id": "dv-00120",
+    "explanation": "Parso against June 27 resolves to June 25. The model produces June 26, a one-day rather than two-day offset. This is a relative-date error despite correct amount and transaction-ID normalization."
+  },
+  {
+    "id": "dv-00011",
+    "explanation": "The correctly extracted disputed amount is Rs 84,137, above the Rs 50,000 P1 threshold. The model returns P3 and false for needs_human, missing both the threshold and the dependent escalation rule."
+  },
+  {
+    "id": "dv-00003",
+    "explanation": "The ticket explicitly threatens consumer court, which requires P1 regardless of the small amount. The model returns P3 while needs_human is true, showing inconsistent application of the priority and escalation rules."
+  },
+  {
+    "id": "dv-00005",
+    "explanation": "A failed transfer of Rs 49,680 lies above the Rs 5,000 P2 threshold and below P1. The model extracts the correct amount but assigns P3, so the failure is threshold application rather than amount conversion."
+  },
+  {
+    "id": "dv-00016",
+    "explanation": "The failed UPI top-up of Rs 25,647 requires P2. The model returns P3 despite a correct category and amount; the urgent wording does not change the specified threshold rule."
+  },
+  {
+    "id": "dv-00017",
+    "explanation": "The model correctly ignores the Rs 712 balance and extracts the Rs 180,827.25 refund amount, but returns P3 instead of P1. Its true needs_human value is inconsistent with the predicted priority."
+  }
+]

@@ -1,0 +1,8 @@
+{
+  "p50": 168,
+  "p95": 225,
+  "p99": 1816,
+  "maximum_observed": 2215,
+  "max_sequence_length": 2304,
+  "no_truncation": true
+}

@@ -1,0 +1,130 @@
+{
+  "all": {
+    "n": 200,
+    "json_valid": 1.0,
+    "exact_match": 0.625,
+    "mean_field_acc": 0.939375,
+    "fields": {
+      "category": 0.965,
+      "priority": 0.645,
+      "amount_paise": 1.0,
+      "txn_date": 0.985,
+      "txn_id": 1.0,
+      "channel": 0.995,
+      "language": 1.0,
+      "needs_human": 0.925
+    }
+  },
+  "category=other": {
+    "n": 16,
+    "json_valid": 1.0,
+    "exact_match": 0.875,
+    "mean_field_acc": 0.9765625,
+    "fields": {
+      "category": 0.9375,
+      "priority": 0.875,
+      "amount_paise": 1.0,
+      "txn_date": 1.0,
+      "txn_id": 1.0,
+      "channel": 1.0,
+      "language": 1.0,
+      "needs_human": 1.0
+    }
+  },
+  "category=kyc": {
+    "n": 24,
+    "json_valid": 1.0,
+    "exact_match": 1.0,
+    "mean_field_acc": 1.0,
+    "fields": {
+      "category": 1.0,
+      "priority": 1.0,
+      "amount_paise": 1.0,
+      "txn_date": 1.0,
+      "txn_id": 1.0,
+      "channel": 1.0,
+      "language": 1.0,
+      "needs_human": 1.0
+    }
+  },
+  "category=refund": {
+    "n": 55,
+    "json_valid": 1.0,
+    "exact_match": 0.41818181818181815,
+    "mean_field_acc": 0.9068181818181819,
+    "fields": {
+      "category": 0.9818181818181818,
+      "priority": 0.43636363636363634,
+      "amount_paise": 1.0,
+      "txn_date": 0.9636363636363636,
+      "txn_id": 1.0,
+      "channel": 1.0,
+      "language": 1.0,
+      "needs_human": 0.8727272727272727
+    }
+  },
+  "category=payment_failed": {
+    "n": 53,
+    "json_valid": 1.0,
+    "exact_match": 0.4339622641509434,
+    "mean_field_acc": 0.910377358490566,
+    "fields": {
+      "category": 0.9622641509433962,
+      "priority": 0.4716981132075472,
+      "amount_paise": 1.0,
+      "txn_date": 0.9811320754716981,
+      "txn_id": 1.0,
+      "channel": 1.0,
+      "language": 1.0,
+      "needs_human": 0.8679245283018868
+    }
+  },
+  "category=fraud": {
+    "n": 15,
+    "json_valid": 1.0,
+    "exact_match": 0.4,
+    "mean_field_acc": 0.8916666666666667,
+    "fields": {
+      "category": 0.8,
+      "priority": 0.4666666666666667,
+      "amount_paise": 1.0,
+      "txn_date": 1.0,
+      "txn_id": 1.0,
+      "channel": 0.9333333333333333,
+      "language": 1.0,
+      "needs_human": 0.9333333333333333
+    }
+  },
+  "category=offers": {
+    "n": 18,
+    "json_valid": 1.0,
+    "exact_match": 0.9444444444444444,
+    "mean_field_acc": 0.9930555555555556,
+    "fields": {
+      "category": 1.0,
+      "priority": 0.9444444444444444,
+      "amount_paise": 1.0,
+      "txn_date": 1.0,
+      "txn_id": 1.0,
+      "channel": 1.0,
+      "language": 1.0,
+      "needs_human": 1.0
+    }
+  },
+  "category=account_access": {
+    "n": 19,
+    "json_valid": 1.0,
+    "exact_match": 0.9473684210526315,
+    "mean_field_acc": 0.993421052631579,
+    "fields": {
+      "category": 1.0,
+      "priority": 0.9473684210526315,
+      "amount_paise": 1.0,
+      "txn_date": 1.0,
+      "txn_id": 1.0,
+      "channel": 1.0,
+      "language": 1.0,
+      "needs_human": 1.0
+    }
+  }
+}

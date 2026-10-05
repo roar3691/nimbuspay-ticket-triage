@@ -1,0 +1,19 @@
+{
+  "training_and_dev_complete": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E"
+  ],
+  "baseline_fixed_complete": true,
+  "baseline_rules_complete": false,
+  "baseline_rules_partial_predictions_recovered": 0,
+  "selected_run": "C",
+  "test_predictions_complete": false,
+  "adapter_reload_check_complete": false,
+  "fresh_free_t4_notebook_verified": false,
+  "report_complete": false,
+  "blocker": "Colab refused GPU connection due to usage limits after runtime disconnected during rules baseline.",
+  "metrics_independently_rescored": true
+}

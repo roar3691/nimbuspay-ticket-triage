@@ -1,0 +1,33 @@
+{
+  "run": "B",
+  "data": "clean",
+  "four_bit": true,
+  "lr": 0.0002,
+  "seed": 42,
+  "train_rows": 1333,
+  "trainable_parameters": 18464768,
+  "max_steps": 160,
+  "effective_batch_size": 16,
+  "max_sequence_length": 2304,
+  "training_minutes": 31.005480311983334,
+  "peak_gpu_allocated_bytes": 6773208576,
+  "peak_gpu_reserved_bytes": 8092909568,
+  "metrics": {
+    "n": 200,
+    "json_valid": 1.0,
+    "exact_match": 0.615,
+    "mean_field_acc": 0.93375,
+    "fields": {
+      "category": 0.97,
+      "priority": 0.675,
+      "amount_paise": 0.995,
+      "txn_date": 0.985,
+      "txn_id": 1.0,
+      "channel": 1.0,
+      "language": 1.0,
+      "needs_human": 0.845
+    }
+  },
+  "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
+  "revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306"
+}

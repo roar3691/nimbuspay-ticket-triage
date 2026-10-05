@@ -1,6 +1,7 @@
 """Transparent PEFT training, evaluation and export for a free Colab T4."""
 import copy
 import gc
+import hashlib
 import importlib.metadata
 import json
 import math
@@ -106,34 +107,51 @@ def prepare(data_dir,out):
 
 
 @torch.inference_mode()
-def generate_rows(model,tokenizer,rows,path,rules=None):
+def generate_rows(model,tokenizer,rows,path,rules=None,resume=False):
     """Only generation/decode/whitespace strip. No audit helpers or output repair."""
     model.eval()
     model.config.use_cache=True
     eos=model.generation_config.eos_token_id
     generation=GenerationConfig(do_sample=False,num_beams=1,max_new_tokens=200,eos_token_id=eos,pad_token_id=tokenizer.pad_token_id,use_cache=True)
-    predictions=[]
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+    predictions=[]
+    if resume and path.exists():
+        # Recover flushed records only. Never alter a model output or accept a
+        # partial/broken JSONL record; validation must precede appending.
+        saved=path.read_text()
+        assert not saved or saved.endswith('\n'), 'Incomplete JSONL write: preserve and inspect the file before resuming'
+        predictions=[json.loads(line) for line in saved.splitlines()]
+        assert len(predictions)<=len(rows)
+        assert [p['id'] for p in predictions]==[r['id'] for r in rows[:len(predictions)]]
+        assert all(set(p)=={'id','output'} and isinstance(p['output'],str) for p in predictions)
+        assert len({p['id'] for p in predictions})==len(predictions)
+        print(f'{path.name}: retaining {len(predictions)} completed outputs',flush=True)
+    completed=len(predictions)
     started=time.perf_counter()
-    with path.open('w') as f:
-        for index,row in enumerate(rows):
-            messages=copy.deepcopy([m for m in row['messages'] if m['role'] in {'system','user'}])
-            assert [m['role'] for m in messages] == ['system','user']
-            if rules is not None:
-                messages[0]['content'] += '\n\n'+rules
-            inputs=tokenizer.apply_chat_template(messages,tokenize=True,add_generation_prompt=True,return_tensors='pt').to(model.device)
-            assert inputs.shape[1]+200 <= model.config.max_position_embeddings, 'Input exceeds model context; never truncate'
-            ids=model.generate(input_ids=inputs,attention_mask=torch.ones_like(inputs),generation_config=generation)
-            output=tokenizer.decode(ids[0,inputs.shape[1]:],skip_special_tokens=True).strip()
-            prediction={'id':row['id'],'output':output}
-            predictions.append(prediction);f.write(json.dumps(prediction,ensure_ascii=False)+'\n');f.flush()
-            if (index+1)%25==0:print(f'{path.name}: {index+1}/{len(rows)}; {(time.perf_counter()-started)/60:.1f} min',flush=True)
+    if not resume or not path.exists():
+        path.write_text('')
+    for index,row in enumerate(rows[completed:],start=completed):
+        messages=copy.deepcopy([m for m in row['messages'] if m['role'] in {'system','user'}])
+        assert [m['role'] for m in messages] == ['system','user']
+        if rules is not None:
+            messages[0]['content'] += '\n\n'+rules
+        inputs=tokenizer.apply_chat_template(messages,tokenize=True,add_generation_prompt=True,return_tensors='pt').to(model.device)
+        assert inputs.shape[1]+200 <= model.config.max_position_embeddings, 'Input exceeds model context; never truncate'
+        ids=model.generate(input_ids=inputs,attention_mask=torch.ones_like(inputs),generation_config=generation)
+        output=tokenizer.decode(ids[0,inputs.shape[1]:],skip_special_tokens=True).strip()
+        prediction={'id':row['id'],'output':output}
+        predictions.append(prediction)
+        # Closing every record matters for the mounted Drive writer: a
+        # terminated runtime lost an open partial baseline file despite flush.
+        with path.open('a') as f:
+            f.write(json.dumps(prediction,ensure_ascii=False)+'\n')
+        if (index+1)%25==0:print(f'{path.name}: {index+1}/{len(rows)}; {(time.perf_counter()-started)/60:.1f} min',flush=True)
     return predictions
 
 
-def evaluate(model,tokenizer,dev,out,rules=None):
+def evaluate(model,tokenizer,dev,out,rules=None,resume=False):
     out=Path(out)
-    predictions=generate_rows(model,tokenizer,dev,out/'predictions_dev.jsonl',rules=rules)
+    predictions=generate_rows(model,tokenizer,dev,out/'predictions_dev.jsonl',rules=rules,resume=resume)
     metrics=score(dev,predictions)
     (out/'dev_metrics.json').write_text(json.dumps(metrics,indent=2))
     print('Dev:',json.dumps(metrics['all']),flush=True)
@@ -150,9 +168,8 @@ def release(model):
 def baseline(tokenizer,dev,out,rules):
     root=Path(out)
     model=load_base(False)
-    first=evaluate(model,tokenizer,dev,root/'baseline_fixed')
-    second=evaluate(model,tokenizer,dev,root/'baseline_rules',rules=rules)
-    for name,metrics in [('baseline_fixed',first),('baseline_rules',second)]:
+    for name,prompt_rules in [('baseline_fixed',None),('baseline_rules',rules)]:
+        metrics=evaluate(model,tokenizer,dev,root/name,rules=prompt_rules,resume=True)
         (root/name/'result.json').write_text(json.dumps({'run':name,'four_bit':False,'metrics':metrics['all']},indent=2))
     del model;gc.collect();torch.cuda.empty_cache()
 
@@ -175,7 +192,7 @@ def train_run(name,tokenizer,rows,maximum,out,dev,max_steps=160):
     lora=LoraConfig(r=16,lora_alpha=32,lora_dropout=.05,bias='none',task_type='CAUSAL_LM',target_modules=['q_proj','k_proj','v_proj','o_proj','gate_proj','up_proj','down_proj'])
     model=get_peft_model(model,lora)
     trainable=sum(p.numel() for p in model.parameters() if p.requires_grad)
-    assert 0 < trainable <= 50_000_000
+    assert 0 < trainable < 50_000_000
     assert all('lora_' in name for name,p in model.named_parameters() if p.requires_grad)
     dataset=TicketDataset(tokenizer,rows,maximum)
     kwargs=dict(output_dir=str(destination/'checkpoints'),max_steps=max_steps,per_device_train_batch_size=1,gradient_accumulation_steps=16,learning_rate=config['lr'],warmup_steps=8,lr_scheduler_type='cosine',optim='adamw_torch',weight_decay=0,fp16=True,bf16=False,gradient_checkpointing=True,gradient_checkpointing_kwargs={'use_reentrant':False},max_grad_norm=1.0,logging_steps=10,save_strategy='steps',save_steps=50,save_total_limit=1,report_to='none',seed=42,data_seed=42,group_by_length=True,dataloader_num_workers=0,remove_unused_columns=False)
@@ -193,6 +210,7 @@ def train_run(name,tokenizer,rows,maximum,out,dev,max_steps=160):
     minutes=(time.perf_counter()-started)/60
     peak_allocated=torch.cuda.max_memory_allocated()
     peak_reserved=torch.cuda.max_memory_reserved()
+    (destination/'training_summary.json').write_text(json.dumps({'training_minutes':minutes,'peak_gpu_allocated_bytes':peak_allocated,'peak_gpu_reserved_bytes':peak_reserved,'max_steps':trainer.state.global_step},indent=2))
     model.save_pretrained(destination/'adapter',safe_serialization=True)
     tokenizer.save_pretrained(destination/'adapter')
     (destination/'training_log.json').write_text(json.dumps(trainer.state.log_history,indent=2))
@@ -213,14 +231,25 @@ def select_best(out):
     return best
 
 
-def export_best(tokenizer,dev,test,out,submission):
+def export_best(tokenizer,dev,test,out,submission,resume_test=False):
     out,submission=Path(out),Path(submission)
     best=select_best(out)
     submission.mkdir(parents=True,exist_ok=True)
+    provenance=submission/'selected_run.json'
+    if resume_test and (submission/'predictions_test.jsonl').exists():
+        previous=json.loads(provenance.read_text())
+        assert all(previous[k]==best[k] for k in ['run','model_id','revision','four_bit']), 'Saved test outputs belong to another run'
+        def digest(path):
+            h=hashlib.sha256()
+            with path.open('rb') as f:
+                for chunk in iter(lambda:f.read(1024*1024),b''):h.update(chunk)
+            return h.hexdigest()
+        assert digest(submission/'adapter/adapter_model.safetensors')==digest(out/best['run']/'adapter/adapter_model.safetensors'), 'Adapter provenance mismatch'
+    provenance.write_text(json.dumps(best,indent=2))
     shutil.copytree(out/best['run']/'adapter',submission/'adapter',dirs_exist_ok=True)
     shutil.copy2(out/'cleaning_log.csv',submission/'cleaning_log.csv')
     model=PeftModel.from_pretrained(load_base(best['four_bit']),submission/'adapter')
-    predictions=generate_rows(model,tokenizer,test,submission/'predictions_test.jsonl')
+    predictions=generate_rows(model,tokenizer,test,submission/'predictions_test.jsonl',resume=resume_test)
     assert len(predictions)==len(test)==400
     assert {p['id'] for p in predictions}=={r['id'] for r in test}
     del model;gc.collect();torch.cuda.empty_cache()
