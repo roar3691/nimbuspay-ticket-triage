@@ -1,0 +1,21 @@
+{
+  "input_rows": 1445,
+  "retained_rows": 1333,
+  "actions": {
+    "fix": 194,
+    "drop": 112
+  },
+  "findings": {
+    "schema_priority_order_and_thresholds": 60,
+    "legacy_schema_prio_to_priority": 70,
+    "ticket_evidence_txn_date": 30,
+    "empty_or_test_ticket_unrelated_label": 10,
+    "schema_needs_human_repeat_or_p1": 21,
+    "truncated_or_invalid_json": 25,
+    "ticket_evidence_txn_id": 20,
+    "ticket_evidence_amount_paise": 25,
+    "duplicate": 77
+  },
+  "long_ticket_count": 40,
+  "training_sha256": "d2378c4d5987876f87442edace0fdac9bdcb40d561ead7cccba144b26819424c"
+}
