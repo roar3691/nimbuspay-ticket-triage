@@ -74,9 +74,17 @@ def build(root,data):
     add('Error analysis: selected adapter',title)
     add(f"All 200 dev rows, supplied scorer unchanged. JSON valid {metrics['all']['json_valid']:.1%}; {len(failures)} rows fail exact match. The explanations below are hypotheses grounded in the observed field differences and ticket evidence, not causal proof.")
     fields=sorted(metrics['all']['fields'].items(),key=lambda pair:pair[1])
-    table([['Field (weakest first)','Accuracy']]+[[k,f'{v:.1%}'] for k,v in fields],[220,80])
     categories=sorted(((name.removeprefix('category='),v) for name,v in metrics.items() if name.startswith('category=')),key=lambda pair:pair[1]['exact_match'])
-    table([['Category','n','Exact','Fields']]+[[k,str(v['n']),f"{v['exact_match']:.1%}",f"{v['mean_field_acc']:.1%}"] for k,v in categories],[200,50,65,75])
+    rows=[['Field (weakest first)','Accuracy','Category','n','Exact','Fields']]
+    for index in range(max(len(fields),len(categories))):
+        field=[fields[index][0],f'{fields[index][1]:.1%}'] if index<len(fields) else ['','']
+        if index<len(categories):
+            category,value=categories[index]
+            group=[category,str(value['n']),f"{value['exact_match']:.1%}",f"{value['mean_field_acc']:.1%}"]
+        else:
+            group=['','','','']
+        rows.append(field+group)
+    table(rows,[115,55,140,35,55,55])
     add('Actual dev failures 1-5',heading)
     def failure(number,n):
         a=actual[n['id']]

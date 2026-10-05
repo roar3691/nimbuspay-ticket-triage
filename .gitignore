@@ -12,3 +12,4 @@ model_cache/
 artifacts/raw_training_evidence.jsonl
 artifacts/cleaned_train.jsonl
 artifacts/augmented_train.jsonl
+artifacts/cleaning_log.csv
