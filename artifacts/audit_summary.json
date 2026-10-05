@@ -17,5 +17,6 @@
     "duplicate": 77
   },
   "long_ticket_count": 40,
+  "retained_long_ticket_count": 36,
   "training_sha256": "d2378c4d5987876f87442edace0fdac9bdcb40d561ead7cccba144b26819424c"
 }

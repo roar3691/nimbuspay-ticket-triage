@@ -24,7 +24,8 @@ raw test predictions, three-page report, and saved experiment metrics.
    The under-three-hour check applies to the default path.
 
 The notebook embeds the source files and pins dependencies from `requirements.txt`.
-PyTorch/CUDA versions supplied by Colab are recorded in `environment.json`.
+PyTorch is pinned to the validated 2.11.0 release; the CUDA build supplied by Colab
+and all measured package versions are recorded in `environment.json`.
 Inference is greedy, one complete ticket at a time, using the native chat template,
 `max_new_tokens=200`, generated-token decoding and whitespace stripping.
 
@@ -39,7 +40,8 @@ python3 verify_submission.py --data private/candidate_pack/data
 
 The audit retains 1,333 of 1,445 rows: 194 fixed and 112 dropped original rows.
 The training maximum is 2,215 complete tokens, rounded to 2,304. No ticket is truncated.
-All 40 long tickets remain intact. Prompt, header, padding and the template separator
+All 40 original long rows are measured; 36 unique long tickets remain after deduplication.
+Prompt, header, padding and the template separator
 are masked; assistant JSON and its end token are supervised.
 
 Deadline used: October 6, 2026, 17:06 IST, following the assignment email's 24-hour rule.

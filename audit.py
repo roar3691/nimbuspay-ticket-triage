@@ -180,6 +180,7 @@ def clean(rows, out):
                 reason = 'duplicate_ticket_keep_' + prior_id
                 log.append({'id':row['id'],'action':'drop','reason':reason})
                 counters['duplicate'] += 1
+                evidence.append({'id':row['id'],'drop_reason':reason,'kept_id':prior_id,'ticket':user,'before':row['messages'][-1]['content'],'corrected_label_agrees':True})
                 continue
             groups[normalized] = (row['id'], label)
             cleaned = copy.deepcopy(row)
@@ -198,7 +199,7 @@ def clean(rows, out):
     dump_jsonl(out/'raw_training_evidence.jsonl',evidence)
     with (out/'cleaning_log.csv').open('w',newline='') as f:
         writer=csv.DictWriter(f,fieldnames=['id','action','reason']);writer.writeheader();writer.writerows(log)
-    summary={'input_rows':len(rows),'retained_rows':len(retained),'actions':dict(Counter(r['action'] for r in log)),'findings':dict(counters),'long_ticket_count':sum(len(r['messages'][1]['content'])>1500 for r in rows),'training_sha256':hashlib.sha256(json.dumps(rows,ensure_ascii=False,sort_keys=True).encode()).hexdigest()}
+    summary={'input_rows':len(rows),'retained_rows':len(retained),'actions':dict(Counter(r['action'] for r in log)),'findings':dict(counters),'long_ticket_count':sum(len(r['messages'][1]['content'])>1500 for r in rows),'retained_long_ticket_count':sum(len(r['messages'][1]['content'])>1500 for r in retained),'training_sha256':hashlib.sha256(json.dumps(rows,ensure_ascii=False,sort_keys=True).encode()).hexdigest()}
     (out/'audit_summary.json').write_text(json.dumps(summary,indent=2))
     return retained,summary
 
