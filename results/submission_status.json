@@ -15,5 +15,6 @@
   "fresh_free_t4_notebook_verified": false,
   "report_complete": false,
   "blocker": "Colab refused GPU connection due to usage limits after runtime disconnected during rules baseline.",
-  "metrics_independently_rescored": true
+  "metrics_independently_rescored": true,
+  "report_draft_ready": true
 }

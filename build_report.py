@@ -11,9 +11,13 @@ from xml.sax.saxutils import escape
 from score import KEYS, load, parse, same, score
 
 
-def collect(root,data):
+def collect(root,data,allow_incomplete=False):
     results=root/'results'
-    runs={name:json.loads((results/name/'result.json').read_text()) for name in ['baseline_fixed','baseline_rules','A','B','C','D','E']}
+    runs={}
+    for name in ['baseline_fixed','baseline_rules','A','B','C','D','E']:
+        path=results/name/'result.json'
+        assert path.exists() or allow_incomplete, f'Missing measured result: {name}'
+        runs[name]=json.loads(path.read_text()) if path.exists() else None
     best=json.loads((results/'best_run.json').read_text())
     dev=load(data/'dev.jsonl');predictions=load(results/best['run']/'predictions_dev.jsonl')
     metrics=score(dev,predictions)
@@ -29,12 +33,15 @@ def collect(root,data):
     return runs,best,metrics,failures
 
 
-def build(root,data):
+def build(root,data,allow_incomplete=False):
     from reportlab.lib import colors
     from reportlab.lib.styles import ParagraphStyle
     from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle,PageBreak,KeepTogether
     from pypdf import PdfReader
-    runs,best,metrics,failures=collect(root,data)
+    runs,best,metrics,failures=collect(root,data,allow_incomplete)
+    status=json.loads((root/'results/submission_status.json').read_text()) if (root/'results/submission_status.json').exists() else {}
+    if not allow_incomplete:
+        assert status.get('test_predictions_complete') and status.get('fresh_free_t4_notebook_verified'), 'Final report requires completed GPU acceptance work'
     notes=json.loads((root/'results/error_analysis.json').read_text())
     assert len(notes)>=10 and len({n['id'] for n in notes})==len(notes)
     actual={f['id']:f for f in failures}
@@ -54,6 +61,8 @@ def build(root,data):
         t.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e7edf5')),('VALIGN',(0,0),(-1,-1),'TOP'),('LINEBELOW',(0,0),(-1,0),.5,colors.HexColor('#9ba9bf')),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#f6f8fb')]),('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4)]))
         story.append(t)
     add('NimbusPay ticket triage',title)
+    if allow_incomplete:
+        add('<b>DRAFT - GPU quota blocker.</b> Rules baseline, test predictions, adapter reload and fresh notebook verification remain incomplete. All A-E dev scores below were independently rescored from recovered outputs.',small)
     add(f"Selected run {best['run']} | Dev exact match {best['metrics']['exact_match']:.1%} | Mean field accuracy {best['metrics']['mean_field_acc']:.1%}")
     add('Training-only audit and evidence',heading)
     f=audit['findings']
@@ -64,9 +73,13 @@ def build(root,data):
     rows=[['Run / change','Exact','Fields','Peak GiB A/R','Train min']]
     labels={'baseline_fixed':'Base, fixed prompt (FP16)','baseline_rules':'Base + schema (FP16)','A':'A: raw labels, 4-bit','B':'B: cleaned, 4-bit','C':'C: B with FP16 LoRA','D':'D: B with LR 1e-4','E':'E: B with notation variants'}
     for name,r in runs.items():
+        if r is None:
+            rows.append([labels[name],'Pending','Pending','-','-'])
+            continue
         rows.append([labels[name],f"{r['metrics']['exact_match']:.1%}",f"{r['metrics']['mean_field_acc']:.1%}",f"{r['peak_gpu_allocated_bytes']/2**30:.2f}/{r['peak_gpu_reserved_bytes']/2**30:.2f}" if name in 'ABCDE' else '-',f"{r['training_minutes']:.1f}" if name in 'ABCDE' else '-'])
     table(rows,[200,48,48,92,58])
     add('A/R = peak CUDA allocated/reserved during training; elapsed excludes model load and dev generation. A vs B isolates cleaning, B vs C precision, B vs D learning rate, and B vs E input notation. All use one seed and 160 updates; cleaning changes effective epochs. Treat differences as exploratory, without statistical confidence intervals.',small)
+    add('The fixed baseline wraps all 200 responses in Markdown fences, giving 0% under the unchanged strict scorer. Its first output also uses a different ticket schema. JSON validity in the table means parseable JSON object, not complete schema compliance.',small)
     add('Pipeline and selection',heading)
     add(f"Qwen2.5-1.5B-Instruct (1.54B), pinned revision {best['revision'][:12]}, on {escape(env['gpu'])}. PEFT trains {best['trainable_parameters']:,} parameters. Rank 16, alpha 32, dropout .05 on attention/MLP projections; AdamW, batch 1 x accumulation 16, cosine LR 2e-4 (D: 1e-4), eight warmup steps, FP16 compute and gradient checkpointing. QLoRA uses NF4/double quantization.")
     add(f"Native chat template; prompt/header/padding/separator tokens masked, assistant JSON plus end token supervised. Across raw, clean and augmented sequences, p50/p95/p99/max: {lengths['p50']}/{lengths['p95']}/{lengths['p99']}/{lengths['maximum_observed']} tokens; bound {lengths['max_sequence_length']}, dynamic padding, no truncation/packing. All 40 original long rows were measured; 36 unique long tickets remain after deduplication. E replaces {audit['augmented_rows']} eligible tickets (20% of eligible) with deterministic equivalent amount/ID notation, preserving labels and size.",small)
@@ -102,13 +115,16 @@ def build(root,data):
     add('One more week',heading)
     add('Days 1-2: manually audit remaining ambiguous training categories and language labels; expand training-only coverage around measured weak rules, threshold boundaries, quoted history, relative dates and competing amounts. Days 3-4: compare balanced sampling and focused amount/date notation augmentation under the same generation contract. Days 5-6: repeat the strongest configuration across three seeds and test a small rank/step budget. Day 7: lock the selected configuration, validate a fresh T4 run and independently reload the adapter. Keep dev as evaluation-only and avoid tuning against test outputs.')
     add('Inference and practical limitations',heading)
-    add('Inference uses exactly original system/user messages, native chat formatting, greedy model.generate and 200 new tokens. Decode only generated tokens with normal special-token omission, then strip whitespace; no repairs or rules. The selected PEFT adapter is reloaded independently and a seeded sample of ten test outputs must match. Complete inputs and failed outputs are preserved. Only one seed and 200 dev rows limit conclusions; hidden test may be harder. Colab package/runtime drift is recorded in environment.json.')
+    add('Inference uses original system/user messages, native chat formatting, greedy model.generate and 200 new tokens. Decode generated tokens with normal special-token omission and strip whitespace; no repairs or rules. Acceptance requires reloading the adapter and matching ten seeded test outputs. One seed and 200 dev rows limit conclusions; hidden test may be harder. Package/runtime drift is recorded in environment.json.')
+    if allow_incomplete:
+        add('At quota exhaustion, Colab refused another GPU connection. All A-E adapters/results and fixed-baseline outputs survived in private Drive; the partial rules-baseline file did not persist. CPU recovery downloaded the winning 73.9 MB adapter and verified all completed scores. Recovery code now closes each prediction record. GPU inference and the fresh free-T4 check remain pending; no alternate hardware or invented metrics are substituted.',small)
     add('AI assistance disclosure',heading)
     add('OpenAI Codex assisted archive inspection, deterministic audit code, training/evaluation implementation, browser operation in Colab, repository setup, verification and report drafting. Codex did not call another model/API to generate labels or submitted predictions. Training corrections are deterministic schema-based code; all predictions are raw outputs from Qwen and its PEFT adapters. Scores and examples are read from saved outputs. The candidate must review the code and explain the choices in the live defense.')
-    output=root/'report.pdf'
+    output=root/('private/report_draft.pdf' if allow_incomplete else 'report.pdf')
+    output.parent.mkdir(parents=True,exist_ok=True)
     def footer(canvas,doc):
         canvas.setFont('Helvetica',8);canvas.setFillColor(colors.HexColor('#69758a'))
-        canvas.drawString(36,22,'NimbusPay | measured T4 experiment report')
+        canvas.drawString(36,22,'NimbusPay | '+('DRAFT | ' if allow_incomplete else '')+'measured T4 experiment report')
         canvas.drawRightString(576,22,f'{doc.page}/3')
     SimpleDocTemplate(str(output),pagesize=(612,792),rightMargin=36,leftMargin=36,topMargin=32,bottomMargin=35).build(story,onFirstPage=footer,onLaterPages=footer)
     assert len(PdfReader(output).pages)==3, 'Report exceeds page budget; revise layout'
@@ -116,5 +132,5 @@ def build(root,data):
 
 
 if __name__=='__main__':
-    ap=argparse.ArgumentParser();ap.add_argument('--data',type=Path,required=True);ap.add_argument('--root',type=Path,default=Path(__file__).parent)
-    args=ap.parse_args();build(args.root,args.data)
+    ap=argparse.ArgumentParser();ap.add_argument('--data',type=Path,required=True);ap.add_argument('--root',type=Path,default=Path(__file__).parent);ap.add_argument('--allow-incomplete',action='store_true')
+    args=ap.parse_args();build(args.root,args.data,args.allow_incomplete)
