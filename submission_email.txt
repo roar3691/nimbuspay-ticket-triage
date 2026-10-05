@@ -1,0 +1,13 @@
+Hi VIMA3YA team,
+
+Please find my Machine Learning Intern assignment submission here:
+https://github.com/roar3691/nimbuspay-ticket-triage
+
+The repository includes the Colab notebook, PEFT adapter, report, cleaning log,
+and test predictions.
+
+Best regards,
+Yanala Raghuvamshi Reddy
+
+[Draft only. Send after checking all stated artifacts exist and making the repository public
+between October 6, 2026, 17:06 and 18:06 IST. Do not commit after 17:06 IST.]
