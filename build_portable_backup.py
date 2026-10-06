@@ -72,7 +72,7 @@ if USE_DRIVE_BACKUP:
     drive.mount('/content/drive')
     BACKUP=Path('/content/drive/MyDrive/nimbuspay-portable-private')
     marker=BACKUP/'backup_id.txt'
-    backup_id=hashlib.sha256((ROOT/'MANIFEST.json').read_bytes()).hexdigest()
+    backup_id=manifest['backup_id']
     if BACKUP.exists():
         assert marker.exists() and marker.read_text()==backup_id, 'Different backup at Drive destination; choose a new folder'
     else:
@@ -139,7 +139,9 @@ def write_manifest(stage,progress):
     path=stage/'submission/predictions_test.jsonl'
     progress['test_saved_rows']=len(path.read_text().splitlines()) if path.exists() else 0
     files={str(p.relative_to(stage)):{'bytes':p.stat().st_size,'sha256':digest(p)} for p in sorted(stage.rglob('*')) if p.is_file() and p.name!='MANIFEST.json'}
-    (stage/'MANIFEST.json').write_text(json.dumps({'created_utc':datetime.now(timezone.utc).isoformat(),'private_contains_assessment_data':True,'progress':progress,'files':files},indent=2))
+    # Keep the restore lineage stable when only inference progress changes.
+    backup_id=hashlib.sha256((digest(stage/'private/training_assessment.zip')+digest(stage/'artifacts/C/adapter/adapter_model.safetensors')).encode()).hexdigest()
+    (stage/'MANIFEST.json').write_text(json.dumps({'created_utc':datetime.now(timezone.utc).isoformat(),'backup_id':backup_id,'private_contains_assessment_data':True,'progress':progress,'files':files},indent=2))
     return files
 
 
