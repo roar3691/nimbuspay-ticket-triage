@@ -174,7 +174,7 @@ def build(root,archive,output):
         for name in ['candidate_pack/ASSIGNMENT.md','candidate_pack/SCHEMA.md','candidate_pack/score.py','candidate_pack/data/train.jsonl','candidate_pack/data/dev.jsonl','candidate_pack/data/test_inputs.jsonl']:
             target=private/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(z.read(name))
     assert (stage/'score.py').read_bytes()==(private/'candidate_pack/score.py').read_bytes()
-    for name in ['WORK_STATUS.md','executed_preflight.ipynb','report_draft.pdf','gpu_quota_blocked.jpg','recovered_artifacts.jpg']:
+    for name in ['WORK_STATUS.md','executed_preflight.ipynb','executed_backup.ipynb','report_draft.pdf','gpu_quota_blocked.jpg','recovered_artifacts.jpg']:
         if (root/'private'/name).exists():shutil.copy2(root/'private'/name,private/name)
     for name in ['audit_repeat','pasted_results']:
         copytree(root/'private'/name,private/name)
