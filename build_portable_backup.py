@@ -182,7 +182,10 @@ def build(root,archive,output):
         copytree(root/'private'/name,private/name)
     if (root/'private/recovered/review_dev_failures.json').exists():shutil.copy2(root/'private/recovered/review_dev_failures.json',private/'review_dev_failures.json')
     git_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
-    subprocess.run(['git','bundle','create',str(private/'repository_history.bundle'),'--all'],cwd=root,check=True)
+    # Git history contains another copy of the selected weights. Preserve it
+    # locally beside the ZIP so a Colab upload need not include those twice.
+    history=output/'repository_history.bundle'
+    subprocess.run(['git','bundle','create',str(history),'--all'],cwd=root,check=True)
     (private/'repository_state.json').write_text(json.dumps({'head':git_commit,'working_tree':subprocess.check_output(['git','status','--porcelain'],cwd=root,text=True)},indent=2))
     progress=json.loads((root/'results/submission_status.json').read_text())
     progress['locally_preserved_adapters']=sorted(available)
@@ -204,7 +207,7 @@ Saved: selected C adapter (62.5% dev exact match, 93.9375% mean field accuracy),
 
 Still unfinished: schema baseline; 400 test predictions; independent adapter reload check; fresh default notebook under-three-hour verification; final report and submission checks. Resume inference does not satisfy fresh-training verification. Use `notebook.ipynb` separately for that requirement, uploading the preserved original archive when prompted.
 
-The pinned public Qwen base weights are downloaded again in Colab; no Hugging Face token is required. Completed-run optimizer checkpoints are omitted because no training continuation is required. The original account's saved files are not deleted.
+The pinned public Qwen base weights are downloaded again in Colab; no Hugging Face token is required. Completed-run optimizer checkpoints are omitted because no training continuation is required. The original account's saved files are not deleted. Git history is preserved separately in `repository_history.bundle` beside this ZIP; it is not needed for the Colab upload.
 
 Expected next outputs: backup verification, resume environment, schema baseline progress in batches of 25/200, dev metrics, test progress in batches of 25/400, a 10-row reload check, then RESUMED EVALUATION AND TEST EXPORT COMPLETE.
 
@@ -225,7 +228,7 @@ Inference continuation is estimated at 55–80 minutes after GPU connection and 
     shutil.copy2(stage/'portable_resume.ipynb',output/'portable_resume.ipynb')
     shutil.copy2(stage/'TRANSFER_README.md',output/'START_HERE.md')
     shutil.copy2(stage/'MANIFEST.json',output/'MANIFEST.json')
-    (output/'SHA256SUMS.txt').write_text(f'{digest(zip_path)}  {zip_path.name}\n{digest(output/"portable_resume.ipynb")}  portable_resume.ipynb\n')
+    (output/'SHA256SUMS.txt').write_text(f'{digest(zip_path)}  {zip_path.name}\n{digest(output/"portable_resume.ipynb")}  portable_resume.ipynb\n{digest(history)}  repository_history.bundle\n')
     print(json.dumps({'zip':str(zip_path),'bytes':zip_path.stat().st_size,'files_verified':len(manifest),'adapters':sorted(available),'selected_run':'C'},indent=2))
 
 
