@@ -68,6 +68,14 @@ python3 resume_submission.py --data private/candidate_pack/data \
   --submission /content/drive/MyDrive/nimbuspay-ticket-triage-private/submission
 ```
 
+For a fresh runtime without access to the original Drive, create a private local
+transfer bundle with `build_portable_backup.py --archive /path/to/training_assessment.zip
+--output /path/to/new-backup-folder`. Upload its `portable_resume.ipynb` to Colab,
+then upload the generated ZIP when prompted. Checksums verify the restore; the
+notebook skips completed training and resumes inference. The transfer ZIP contains
+assessment data and must stay private. Only the selected adapter is needed to
+resume; optional other adapters are collected from `private/all_adapters`.
+
 Local audit/recovery checks need only Python's standard library:
 
 ```sh

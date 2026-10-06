@@ -1,4 +1,4 @@
-"""Resume baseline inference and test export from completed Drive runs.
+"""Resume baseline inference and test export from completed local or Drive runs.
 
 Run only after free Colab T4 access returns. This entry point never calls training.
 Existing baseline JSONL records must form an intact prefix of the dev IDs.
@@ -9,7 +9,7 @@ import shutil
 from pathlib import Path
 
 from transformers import AutoTokenizer
-from training import MODEL_ID, REVISION, baseline, environment, export_best, load
+from training import MODEL_ID, REVISION, baseline, environment, export_best, load, select_best
 
 
 def resume(data, out, submission, schema):
@@ -18,7 +18,8 @@ def resume(data, out, submission, schema):
         result=json.loads((out/name/'result.json').read_text())
         assert result['max_steps']==160 and result['metrics']['n']==200
         assert result['model_id']==MODEL_ID and result['revision']==REVISION
-        assert (out/name/'adapter/adapter_model.safetensors').exists()
+    selected=select_best(out)
+    assert (out/selected['run']/'adapter/adapter_model.safetensors').exists(), 'Selected adapter missing'
     tokenizer=AutoTokenizer.from_pretrained(MODEL_ID,revision=REVISION,trust_remote_code=False)
     dev=load(data/'dev.jsonl');test=load(data/'test_inputs.jsonl')
     assert len(dev)==200 and len(test)==400
