@@ -1,0 +1,12 @@
+{
+  "source_archive": "nimbuspay_submission.zip",
+  "source_archive_bytes": 72292886,
+  "fresh_notebook_elapsed_minutes": 79.52135032339999,
+  "training_minutes": 22.13873501221667,
+  "adapter_bytes": 73911112,
+  "adapter_sha256": "60628c8dcb58a5baea74d7a055fe17e35a24a2ac89923ce98ed29775d92ad5f6",
+  "test_predictions": 400,
+  "seeded_reload_sample": 10,
+  "all_reload_outputs_match": true,
+  "fresh_t4_under_three_hours": true
+}

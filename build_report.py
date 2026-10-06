@@ -64,6 +64,12 @@ def build(root,data,allow_incomplete=False):
     if allow_incomplete:
         add('<b>DRAFT - GPU quota blocker.</b> Rules baseline, test predictions, adapter reload and fresh notebook verification remain incomplete. All A-E dev scores below were independently rescored from recovered outputs.',small)
     add(f"Selected run {best['run']} | Dev exact match {best['metrics']['exact_match']:.1%} | Mean field accuracy {best['metrics']['mean_field_acc']:.1%}")
+    fresh_path=root/'results'/'fresh_t4'/'verification.json'
+    if fresh_path.exists():
+        fresh=json.loads(fresh_path.read_text())
+        rerun=json.loads((root/'results'/'fresh_t4'/'C'/'result.json').read_text())
+        check=json.loads((root/'results'/'fresh_t4'/'reproduction_check.json').read_text())
+        add(f"Fresh default-notebook reproduction: Run C trained on a new free T4 in {fresh['training_minutes']:.2f} minutes; the complete notebook took {fresh['fresh_notebook_elapsed_minutes']:.2f} minutes, including setup, evaluation, 400 test predictions and adapter reload. Rerun dev exact match was {rerun['metrics']['exact_match']:.1%}, mean field accuracy {rerun['metrics']['mean_field_acc']:.2%}; all {check['sample_size']} seeded reload predictions matched. This verifies the under-three-hour pipeline; the five-run comparison above remains the basis for selecting the submitted adapter. The rerun score is reported separately because the fresh training produced a different checkpoint.",small)
     add('Training-only audit and evidence',heading)
     f=audit['findings']
     add(f"Parsed all {audit['input_rows']:,} training rows and validated JSON keys, field types, schema invariants and source evidence. Retained {audit['retained_rows']:,}; fixed {audit['actions']['fix']} original rows and dropped {audit['actions']['drop']}. Finding counts overlap across fixes. The original archive is preserved privately.")

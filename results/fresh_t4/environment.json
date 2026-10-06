@@ -1,0 +1,18 @@
+{
+  "gpu": "Tesla T4",
+  "gpu_bytes": 15637086208,
+  "cuda": "13.0",
+  "packages": {
+    "torch": "2.11.0+cu130",
+    "transformers": "4.57.6",
+    "peft": "0.18.1",
+    "accelerate": "1.12.0",
+    "bitsandbytes": "0.49.1",
+    "datasets": "4.4.2",
+    "huggingface-hub": "0.36.0",
+    "tokenizers": "0.22.2",
+    "safetensors": "0.7.0"
+  },
+  "model_id": "Qwen/Qwen2.5-1.5B-Instruct",
+  "revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306"
+}

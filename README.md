@@ -2,15 +2,14 @@
 
 VIMA3YA ML intern assessment. Five controlled training/dev runs completed on a free
 Colab Tesla T4. The rules baseline, all 400 test predictions, and the adapter
-reload check have since completed on a T4. The fresh-training reproduction check
-and final report are still incomplete. Saved dev predictions were independently
+reload check have since completed on a T4. A fresh default-path training reproduction has now completed on a new free T4 in under three hours; the final three-page report is now included in `report.pdf`. Saved dev predictions were independently
 rescored with the supplied, unchanged scorer.
 
 Base model: `Qwen/Qwen2.5-1.5B-Instruct`, revision
 `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`.
 Selected run: **C, FP16 LoRA**; dev exact match **62.5%**, mean field accuracy
 **93.9375%**, parseable JSON **100%**. C wins the tie with E on mean field accuracy.
-Its adapter contains 18,464,768 trainable parameters and is 73,911,112 bytes.
+Its adapter contains 18,464,768 trainable parameters and is 73,911,112 bytes. A separate fresh Run C reproduction scored 61.0% exact match and 93.75% mean field accuracy; training took 22.14 minutes and the complete notebook took 79.52 minutes. This rerun is recorded separately because it produced a different checkpoint from the five-run comparison.
 
 | Run | Change | Dev exact | Mean fields | Training minutes |
 |---|---|---:|---:|---:|
@@ -32,9 +31,7 @@ seeded 10-row reload check reproduced every output. A local schema audit found
 values); these raw generations are retained unchanged. Test accuracy is unknown
 because test labels are withheld.
 
-Pending: fresh default notebook verification on a new T4 runtime (under three
-hours) and the final report of at most three pages. See
-`results/submission_status.json` for the current state. Ten reviewed actual dev
+The fresh default notebook verification passed on a new T4 runtime in 79.52 minutes. Its 400 test outputs have unique, ordered IDs, and all ten seeded single-ticket reload outputs matched. See `results/fresh_t4/` for the fresh-run metrics, logs, predictions and verification record. The three-page report includes both the five-run selection evidence and this fresh reproduction. See `results/submission_status.json` for the current state. Ten reviewed actual dev
 failures are saved in `results/error_analysis.json`.
 
 The supplied dataset, original archive, derived training data and base-model
@@ -49,8 +46,7 @@ used for evaluation and run selection.
 3. Allow private Drive checkpoint storage, or set `USE_DRIVE_BACKUP=False`.
    The default path trains a new C adapter in a fresh run directory.
 4. Set `RUN_ALL_EXPERIMENTS=True` only to rerun both baselines and all experiments.
-   The under-three-hour assertion applies to the default path; it has not yet
-   been verified by a complete fresh run.
+   The under-three-hour assertion applies to the default path and passed in the fresh run (79.52 minutes end to end).
 
 The notebook embeds source and pins dependencies from `requirements.txt`.
 PyTorch is pinned to 2.11.0; the supplied CUDA build and measured versions are

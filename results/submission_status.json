@@ -17,11 +17,11 @@
   "test_rows_with_out_of_spec_values": 10,
   "adapter_reload_check_complete": true,
   "adapter_reload_check_sample_size": 10,
-  "fresh_free_t4_notebook_verified": false,
-  "report_complete": false,
+  "fresh_free_t4_notebook_verified": true,
+  "report_complete": true,
   "metrics_independently_rescored": true,
   "report_draft_ready": true,
-  "blocker": "Fresh-training T4 verification and final report remain incomplete.",
+  "blocker": "Private repository update and final freeze remain.",
   "baseline_fixed_saved_rows": 200,
   "baseline_rules_saved_rows": 200,
   "test_saved_rows": 400,
@@ -29,5 +29,14 @@
     "C"
   ],
   "optimizer_checkpoints_included": false,
-  "base_weights_included": false
+  "base_weights_included": false,
+  "fresh_t4_elapsed_minutes": 79.52135032339999,
+  "fresh_t4_training_minutes": 22.13873501221667,
+  "fresh_t4_dev_exact_match": 0.61,
+  "fresh_t4_dev_mean_field_accuracy": 0.9375,
+  "fresh_t4_test_predictions_complete": true,
+  "fresh_t4_test_prediction_rows": 400,
+  "fresh_t4_adapter_reload_check_complete": true,
+  "fresh_t4_adapter_reload_sample_size": 10,
+  "fresh_t4_archive": "Downloads/nimbuspay_submission.zip"
 }
