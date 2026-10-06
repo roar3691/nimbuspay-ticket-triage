@@ -1,9 +1,10 @@
 # NimbusPay ticket triage
 
 VIMA3YA ML intern assessment. Five controlled training/dev runs completed on a free
-Colab Tesla T4. Saved dev predictions were downloaded and independently rescored
-with the supplied, unchanged scorer. **Submission work remains incomplete because
-Colab refused GPU access after the runtime disconnected.**
+Colab Tesla T4. The rules baseline, all 400 test predictions, and the adapter
+reload check have since completed on a T4. The fresh-training reproduction check
+and final report are still incomplete. Saved dev predictions were independently
+rescored with the supplied, unchanged scorer.
 
 Base model: `Qwen/Qwen2.5-1.5B-Instruct`, revision
 `989aa7980e4cf806f80c7fef2b1adb7bc71aa306`.
@@ -14,22 +15,27 @@ Its adapter contains 18,464,768 trainable parameters and is 73,911,112 bytes.
 | Run | Change | Dev exact | Mean fields | Training minutes |
 |---|---|---:|---:|---:|
 | Fixed baseline | Untuned, original prompt | 0.0% | 0.0% | — |
-| Rules baseline | Untuned, schema added | Pending GPU | Pending GPU | — |
+| Rules baseline | Untuned, schema added | 0.0% | 0.0% | — |
 | A | Raw labels, QLoRA | 58.5% | 92.9375% | 31.52 |
 | B | Cleaned, QLoRA | 61.5% | 93.3750% | 31.01 |
 | C | Cleaned, FP16 LoRA | 62.5% | 93.9375% | 22.90 |
 | D | B with LR 1e-4 | 54.5% | 92.0625% | 32.07 |
 | E | B with notation variants | 62.5% | 93.5625% | 31.65 |
 
-The fixed baseline returned Markdown-fenced JSON for all 200 rows; the scorer
-rejects the fences, so its measured validity and accuracy are zero. No outputs
-were repaired. JSON validity here means the scorer can parse a JSON object;
-it does not establish schema-valid field values.
+Both untuned baselines returned Markdown-fenced output on all 200 dev rows; the
+unchanged scorer accepts only bare JSON, so both measured 0% JSON validity and
+accuracy. No outputs were repaired. The rules baseline's fenced bodies resembled
+the target schema, but the fences alone make them invalid to the scorer. The
+selected C adapter generated 400 test records with unique, complete IDs, and its
+seeded 10-row reload check reproduced every output. A local schema audit found
+10 test outputs with out-of-spec values (8 transaction-ID formats and 2 channel
+values); these raw generations are retained unchanged. Test accuracy is unknown
+because test labels are withheld.
 
-Pending: the rules baseline, 400 test predictions, adapter-reload agreement,
-fresh default notebook verification, and the final three-page PDF report.
-See `results/submission_status.json` for the concrete state. Ten reviewed actual
-dev failures are saved in `results/error_analysis.json`.
+Pending: fresh default notebook verification on a new T4 runtime (under three
+hours) and the final report of at most three pages. See
+`results/submission_status.json` for the current state. Ten reviewed actual dev
+failures are saved in `results/error_analysis.json`.
 
 The supplied dataset, original archive, derived training data and base-model
 weights are excluded from Git. Upload the assessment archive privately into Colab.

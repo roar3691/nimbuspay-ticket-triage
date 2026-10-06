@@ -7,14 +7,27 @@
     "E"
   ],
   "baseline_fixed_complete": true,
-  "baseline_rules_complete": false,
+  "baseline_rules_complete": true,
   "baseline_rules_partial_predictions_recovered": 0,
   "selected_run": "C",
-  "test_predictions_complete": false,
-  "adapter_reload_check_complete": false,
+  "test_predictions_complete": true,
+  "test_prediction_rows": 400,
+  "test_ids_unique_complete_ordered": true,
+  "test_schema_conforming_rows": 390,
+  "test_rows_with_out_of_spec_values": 10,
+  "adapter_reload_check_complete": true,
+  "adapter_reload_check_sample_size": 10,
   "fresh_free_t4_notebook_verified": false,
   "report_complete": false,
-  "blocker": "Colab refused GPU connection due to usage limits after runtime disconnected during rules baseline.",
   "metrics_independently_rescored": true,
-  "report_draft_ready": true
+  "report_draft_ready": true,
+  "blocker": "Fresh-training T4 verification and final report remain incomplete.",
+  "baseline_fixed_saved_rows": 200,
+  "baseline_rules_saved_rows": 200,
+  "test_saved_rows": 400,
+  "locally_preserved_adapters": [
+    "C"
+  ],
+  "optimizer_checkpoints_included": false,
+  "base_weights_included": false
 }
