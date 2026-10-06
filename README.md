@@ -97,13 +97,3 @@ Maximum complete sequence length is 2,215 tokens, rounded to 2,304. Dynamic
 padding preserves complete tickets. All 40 original long rows were measured;
 36 unique long tickets remain after deduplication. Prompt/header/padding/template
 separator tokens are masked; assistant JSON and its end token are supervised.
-
-Deadline: October 6, 2026, 17:06 IST, following the email's 24-hour rule.
-Keep the repository private until then, and make no later commits or pushes.
-The candidate makes it public and manually emails the link during 17:06-18:06 IST.
-
-AI assistance: OpenAI Codex assisted archive inspection, deterministic audit code,
-training/evaluation implementation, Colab browser operation, repository setup,
-verification and report preparation. No external model/API generated training
-labels or submitted predictions. Predictions come from Qwen and its PEFT adapters.
-The candidate must review the implementation and be able to explain it.
